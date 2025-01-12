@@ -1,7 +1,6 @@
 package servlet;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -10,8 +9,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import beans.AccountBean;
-import database.AccountDAO;
+import database.Data;
+import model.Account;
 
 /**
  * Servlet implementation class LoginSecurity
@@ -25,30 +24,22 @@ public class LoginSecurity extends HttpServlet {
     }
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		HttpSession session = request.getSession(false);
 		String username = request.getParameter("username");
 		String password = request.getParameter("password");
-
-		AccountDAO userDAO = new AccountDAO();
-		try {
-			if (!userDAO.checkLogin(username)) {
-				response.sendRedirect("signup.jsp");
-			}
-			AccountBean user = userDAO.findAccountByUsername(username);
-			if (user != null && user.getPassword().equals(password)) {
-				HttpSession session = request.getSession();
-				session.setAttribute("user", user);
-				if(userDAO.isAdmin(user.getUsername()))  {
-					response.sendRedirect(request.getContextPath() + "/adminPage");
-				} else {
-					response.sendRedirect("homePage.jsp");
-				}
-			} else {
-				response.sendRedirect("logig-error.html");
-			}
-		} catch (SQLException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		
+		if (username == null || password == null) {
+			request.getRequestDispatcher("login-error.html").forward(request, response);
 		}
+		
+		for (Account user : Data.getAccounts()) {
+			if (user.getUsername().equals(username) && user.getPassword().equals(password) && "user".equals(user.getRole())){
+				session.setAttribute("user", user);
+				response.sendRedirect("home.jsp");
+				return;
+			}
+		}
+		
 	}
 
 }

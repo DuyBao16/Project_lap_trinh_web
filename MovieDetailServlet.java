@@ -1,6 +1,7 @@
 package servlet;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -8,8 +9,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import beans.MovieBean;
-import database.MovieDAO;
+import database.Data;
+import model.Movie;
 
 /**
  * Servlet implementation class MovieDetailServlet
@@ -24,16 +25,15 @@ public class MovieDetailServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String id = request.getParameter("info");
 		int movieID = Integer.parseInt(id);
-		System.out.println(id);
-        MovieDAO movieDAO = new MovieDAO();
-        MovieBean movie = movieDAO.findMovieByMovieID(movieID);
+		List<Movie> movie = Data.getMovies();
+		for (Movie m : movie) {
+			if (m.getMovieID() == movieID) {
+				request.setAttribute("movie", m);
+	            request.getRequestDispatcher("movieDetail.jsp").forward(request, response);
+			}
+		}
 
-        if (movie != null) {
-            request.setAttribute("movie", movie);
-            request.getRequestDispatcher("movieDetail.jsp").forward(request, response);
-        } else {
-            response.sendRedirect("adminPage.jsp"); 
-        }
+        response.sendRedirect("home.jsp"); 
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

@@ -10,15 +10,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import beans.MovieBean;
-import database.MovieDAO;
+import database.Data;
+import model.Movie;
 
 
 
 /**
  * Servlet implementation class HomeServlet
  */
-@WebServlet("/HomeServlet")
+@WebServlet("/sensitive/HomeServlet")
 public class HomeServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
     public HomeServlet() {
@@ -37,10 +37,9 @@ public class HomeServlet extends HttpServlet {
             return;
         }
         
-        MovieDAO dao = new MovieDAO();
-		List<MovieBean> movies = dao.getAllMovies();
-		session.setAttribute("movieList", movies);
-		request.getRequestDispatcher("home.jsp").forward(request, response);
+        List<Movie> movies = Data.getMovies();
+        session.setAttribute("movieList", movies);
+        request.getRequestDispatcher("home.jsp").forward(request, response);
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

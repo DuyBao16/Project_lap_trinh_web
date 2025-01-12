@@ -1,7 +1,6 @@
 package servlet;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -11,6 +10,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import database.AccountDAO;
+import database.Data;
+import model.Account;
 
 /**
  * Servlet implementation class PaymentServlet
@@ -18,40 +19,35 @@ import database.AccountDAO;
 @WebServlet("/sensitive/PaymentServlet")
 public class PaymentServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+    private AccountDAO accountDAO = new AccountDAO();
     public PaymentServlet() {
         super();
     }
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            response.sendRedirect("login.html?error=Vui lòng đăng nhập để tiếp tục.");
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        Account user = (Account) session.getAttribute("user");
+
+        if (user == null) {
+            response.sendRedirect("data-login.html");
             return;
         }
-        
-		String accountNumber = request.getParameter("accountNumber");
+
+        String accountNumber = request.getParameter("accountNumber");
         String pin = request.getParameter("pin");
-        String[] bookingDetails = (String[]) session.getAttribute("bookingDetails");
-        double amount = Double.parseDouble(bookingDetails[4]);
+        double totalAmount = Data.getTickets().get(Data.getTickets().size() - 1).getPrice();
 
-        AccountDAO accountDAO = new AccountDAO();
-
-        boolean isPaymentSuccessful = false;
-		try {
-			isPaymentSuccessful = accountDAO.processPayment(accountNumber, pin, amount);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
-		if (isPaymentSuccessful) {
-		    // Chuyển hướng tới trang thanh toán thành công
-		    response.sendRedirect("paymentSuccess.jsp");
-		} else {
-		    // Quay lại trang đặt vé nếu thanh toán không thành công
-		    request.setAttribute("errorMessage", "Thanh toán thất bại. Vui lòng kiểm tra thông tin và số dư.");
-		    request.getRequestDispatcher("bookTicket.jsp").forward(request, response);
-		}
-        
-	}
-
+        try {
+            if (accountDAO.validateTransaction(user, accountNumber, pin, totalAmount)) {
+                accountDAO.updateBalance(user, user.getBalance() - Math.abs(totalAmount)); // Trừ số tiền
+                response.sendRedirect("paymentSuccess.jsp");
+            } else {
+                throw new Exception("Giao dịch không hợp lệ!");
+            }
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Thanh toán thất bại: " + e.getMessage());
+            request.getRequestDispatcher("Payment.jsp").forward(request, response);
+        }
+    }
 }
